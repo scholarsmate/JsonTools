@@ -4,9 +4,12 @@ Join any number of flat record JSON tables together via composition.
 import copy
 import json
 
+# from utilities.hdfs_utils import stream_from_hdfs
+# 
+# stream_from_hdfs("/tmp/foobar")
+
 
 class Table(object):
-
     def __init__(self, table, primary_key=None):
         """
          Create a new Table
@@ -91,6 +94,7 @@ def test():
 
     joinedTable = Table(stream1, 'input_record_label').join(Table(stream2, 'input_record_label'))
     print json.dumps({'recs': list(joinedTable.rows())}, indent=2, sort_keys=True)
+
 
 if __name__ == '__main__':
     test()
