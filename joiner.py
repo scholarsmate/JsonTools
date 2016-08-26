@@ -1,8 +1,9 @@
 """
 Join any number of flat record JSON tables together via composition.
 """
-import copy
 import json
+import operator
+
 
 # from utilities.hdfs_utils import stream_from_hdfs
 # 
@@ -10,40 +11,54 @@ import json
 
 
 class Table(object):
-    def __init__(self, table, primary_key=None):
+    def __init__(self, table, primary_key_function=None):
         """
          Create a new Table
 
-        :param table: A JSON string with a list of records (keyed on "rec") or a dict of records keyed on the primary key
-        :param primary_key: If table is a JSON string, use this attribute as the primary key
+        :param table: A list of dicts representing table rows
+        :param primary_key_function: Use this column as the primary key
         """
-        if primary_key is None:
+        if primary_key_function is None:
             self.table_ = table
         else:
             self.table_ = {}
-            tbl = json.loads(table) if isinstance(table, basestring) else table
-            for row in tbl['recs']:
-                pkey = row[primary_key]
-                if pkey in self.table_:
-                    raise KeyError('Primary key: "' + pkey + '" is not unique')
+            self.primary_key_function = primary_key_function
+            for row in table:
+                matching_key = self.primary_key_function(row)
+                # Ensure that the matching key is unique for this table (can be used as a primary key)
+                if matching_key in self.table_:
+                    raise KeyError('Primary key "' + matching_key + '" is not unique')
                 else:
-                    self.table_[pkey] = row
+                    self.table_[matching_key] = row
 
-    def join(self, table):
+    def left_join(self, right_side_table, exclude_columns=None, updateable=False):
         """
-        Creates a new joined table.
+        Creates a new left joined table.
 
-        :param table: The table to join to
+        :param right_side_table: The right-side table to join to
+        :param exclude_columns: Do not join in these columns from the given right-side table
+        :param updateable: If there are columns in the right-side table that match the left-side table , should they \
+        be updated.  If there are columns in the right-side table that match the left-side table and updating is not \
+        desired, a KeyError will be raised.
         :return: A new joined table
         """
-        result = copy.deepcopy(self.table_)
+        result = self.table_.copy()
         for key, row in result.iteritems():
             try:
-                # Merge the dict if there is a match
-                row.update(table.table_[key])
+                row_to_merge = right_side_table.table_[key]
             except:
-                # If there isn't a match, do nothing
-                pass
+                # no match found
+                continue
+            # Merge the dict if there is a match
+            if exclude_columns:
+                row_to_merge = dict((k, v) for k, v in row_to_merge.items() if k not in exclude_columns)
+            if not updateable:
+                for k in row_to_merge.iterkeys():
+                    if k in row:
+                        raise KeyError('Column "' + k + '" is already in this table')
+
+            row.update(row_to_merge)
+
         # Return a new copy of the joined result
         return Table(result)
 
@@ -57,43 +72,28 @@ class Table(object):
             yield row
 
 
+class ToUpperSelector(object):
+    def __init__(self, select_function):
+        self.select_function_ = select_function
+
+    def __call__(self, obj):
+        return self.select_function_(obj).upper()
+
+
+def load_file_of_json_objects(file_path):
+    with open(file_path, 'r') as f:
+        return [json.loads(line) for line in f]
+
+
 def test():
-    stream1 = '''
-    {"recs": [{
-        "Decimal": "1469119904.875811",
-        "Example_Dictionary": "Example_1",
-        "Literal_1": "Example",
-        "Number": "26809",
-        "NumberExample": "0     0     1    0",
-        "SN": "18",
-        "Sequence_1": "Example    1469119904.875811   Example_1        18      26809        0    0     1     0",
-        "input_record_label": "hdfs://foo.foobar.us.ibm.com:8020/mydata/JOEL_101_DAVIN_102/2016_08_02/JOEL101-DAVIN102-somethinghere-2016-07-21_Data.log"
-      },
-      {
-        "Decimal": "1469119904.875812",
-        "Example_Dictionary": "Example_2",
-        "Literal_1": "Example2",
-        "Number": "26810",
-        "NumberExample": "0     0     1    0",
-        "SN": "19",
-        "Sequence_1": "Example    1469119904.875812   Example_2        19      26810        0    0     1     0",
-        "input_record_label": "hdfs://foo.foobar.us.ibm.com:8020/mydata/JOEL_101_DAVIN_102/2016_08_02/JOEL101-DAVIN102-somethinghere2-2016-07-21_Data.log"
-      }
-    ]}
-    '''
-
-    stream2 = '''
-    {"recs":[{
-        "additional_attribute_1": "one",
-        "additional_attribute_2": 2,
-        "additional_attribute_3": 3.1000000000000001,
-        "input_record_label": "hdfs://foo.foobar.us.ibm.com:8020/mydata/JOEL_101_DAVIN_102/2016_08_02/JOEL101-DAVIN102-somethinghere-2016-07-21_Data.log"
-      }
-    ]}
-    '''
-
-    joinedTable = Table(stream1, 'input_record_label').join(Table(stream2, 'input_record_label'))
-    print json.dumps({'recs': list(joinedTable.rows())}, indent=2, sort_keys=True)
+    primary_key_function = ToUpperSelector(operator.itemgetter('pkey'))
+    exclude_columns = ['pkey']
+    joinedTable = Table(load_file_of_json_objects('Samples/Sample_1.txt'), primary_key_function).left_join(
+        Table(load_file_of_json_objects('Samples/Sample_2.txt'), primary_key_function), exclude_columns).left_join(
+        Table(load_file_of_json_objects('Samples/Sample_3.txt'), primary_key_function), exclude_columns).left_join(
+        Table(load_file_of_json_objects('Samples/Sample_4.txt'), primary_key_function), exclude_columns)
+    for row in joinedTable.rows():
+        print json.dumps(row, sort_keys=True)
 
 
 if __name__ == '__main__':
