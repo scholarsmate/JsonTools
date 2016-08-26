@@ -1,0 +1,10 @@
+.idea
+.cache
+.coverage
+*.egg-info
+build
+dist
+usr
+*.pyc
+usr/
+**/__pycache__

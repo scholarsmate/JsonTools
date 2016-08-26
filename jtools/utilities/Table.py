@@ -1,15 +1,3 @@
-"""
-Join any number of flat record JSON tables together via composition.
-"""
-import json
-import operator
-
-
-# from utilities.hdfs_utils import stream_from_hdfs
-# 
-# stream_from_hdfs("/tmp/foobar")
-
-
 class Table(object):
     def __init__(self, table, primary_key_function=None):
         """
@@ -71,30 +59,3 @@ class Table(object):
         for row in self.table_.itervalues():
             yield row
 
-
-class ToUpperSelector(object):
-    def __init__(self, select_function):
-        self.select_function_ = select_function
-
-    def __call__(self, obj):
-        return self.select_function_(obj).upper()
-
-
-def load_file_of_json_objects(file_path):
-    with open(file_path, 'r') as f:
-        return [json.loads(line) for line in f]
-
-
-def test():
-    primary_key_function = ToUpperSelector(operator.itemgetter('pkey'))
-    exclude_columns = ['pkey']
-    joinedTable = Table(load_file_of_json_objects('Samples/Sample_1.txt'), primary_key_function).left_join(
-        Table(load_file_of_json_objects('Samples/Sample_2.txt'), primary_key_function), exclude_columns).left_join(
-        Table(load_file_of_json_objects('Samples/Sample_3.txt'), primary_key_function), exclude_columns).left_join(
-        Table(load_file_of_json_objects('Samples/Sample_4.txt'), primary_key_function), exclude_columns)
-    for row in joinedTable.rows():
-        print json.dumps(row, sort_keys=True)
-
-
-if __name__ == '__main__':
-    test()
