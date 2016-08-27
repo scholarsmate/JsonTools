@@ -4,7 +4,7 @@ from json import dumps
 
 from .base import Base
 from operator import itemgetter
-from jtools.utilities.json_utils import left_join
+from jtools.utilities.json_utils import left_join as left_join_
 
 
 class LeftJoin(Base):
@@ -12,5 +12,5 @@ class LeftJoin(Base):
 
     def run(self):
         pkey = self.options['--pkey']
-        for row in left_join(itemgetter(pkey), file_paths=self.options['<file>'], exclude_columns=[pkey]).rows():
+        for row in left_join_(itemgetter(pkey), file_paths=self.options['<file>'], exclude_columns=[pkey]).rows():
             print dumps(row, sort_keys=True)

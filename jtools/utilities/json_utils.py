@@ -1,9 +1,10 @@
 import json
 from Table import Table
+from hdfs_utils import open_for_read
 
 
 def load_file_of_json_objects(file_path):
-    with open(file_path, 'r') as f:
+    with open_for_read(file_path) as f:
         return [json.loads(line) for line in f]
 
 

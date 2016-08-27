@@ -36,7 +36,6 @@ def main():
     for k, v in options.iteritems():
         if hasattr(commands, k) and v:
             module = getattr(commands, k)
-            print module
             command = [command[1] for command in getmembers(module, isclass) if command[0] != 'Base'][0]
             command = command(options)
             command.run()
