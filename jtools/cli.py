@@ -3,16 +3,18 @@ jtools
 
 Usage:
   jtools hello
-  jtools left_join --pkey=<col> <file>...
+  jtools left_join (--pkey=<col>|--key=<col>) <file>...
   jtools -h | --help
   jtools --version
 
 Options:
   -h --help                         Show this screen.
   --version                         Show version.
+  --pkey=<col>                      Primary (unique) key for the table
+  --key=<col>                       Key for the table
 
 Examples:
-  jtools left_join --pkey=id file1 file2
+  jtools left_join --pkey=id file1 file2 file3
 
 Help:
   For help using this tool, please open an issue on the Github repository:

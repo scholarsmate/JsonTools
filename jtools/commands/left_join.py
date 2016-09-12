@@ -11,6 +11,13 @@ class LeftJoin(Base):
     """Left join files of JSON objects"""
 
     def run(self):
-        pkey = self.options['--pkey']
-        for row in left_join_(itemgetter(pkey), file_paths=self.options['<file>'], exclude_columns=[pkey]).rows():
+        is_primary_key = True
+        key = self.options['--pkey']
+        if key is None:
+            key = self.options['--key']
+            if key is None:
+                raise ValueError('Must provide either --pkey or --key for a left join')
+            is_primary_key = False
+        for row in left_join_(itemgetter(key), file_paths=self.options['<file>'], exclude_columns=[key],
+                              is_primary_key=is_primary_key).rows():
             print dumps(row, sort_keys=True)
