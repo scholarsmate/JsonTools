@@ -8,6 +8,11 @@ def load_file_of_json_objects(file_path):
         return [json.loads(line) for line in f]
 
 
+def read_record(file):
+    for line in file:
+        yield json.loads(line)
+
+
 def left_join(primary_key_function, file_paths, exclude_columns, is_primary_key):
     result = Table(load_file_of_json_objects(file_paths.pop(0)), primary_key_function, is_primary_key)
     for file_path in file_paths:

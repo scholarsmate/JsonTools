@@ -22,14 +22,13 @@ class MD5(object):
     def __call__(self, record):
         import hashlib
         m = hashlib.md5()
-        result = record.copy()
         for k, v in record.items():
             m.update(k)
             m.update('\0')
             m.update(v)
             m.update('\0')
-        result[self._col] = m.hexdigest()
-        return result
+        record[self._col] = m.hexdigest()
+        return record
 
 
 class EmitJson(object):
@@ -39,6 +38,7 @@ class EmitJson(object):
     def __call__(self, record):
         import json
         print >>self.sink_, json.dumps(record)
+        return record
 
 
 def visit(records, function):
@@ -56,6 +56,7 @@ def generate_records(column_defs, rows):
     """
     num_cols = len(column_defs)
     for row in rows:
+        record = {}
         for i in range(0, num_cols):
             record[column_defs[i]] = row[i]
         yield record
@@ -75,6 +76,6 @@ if __name__ == "__main__":
     cols = 5
     rows = 10
     column_defs = ["col%d" % i for i in range(0, cols)]
-    table = list(generate_records(column_defs,generate_rows(len(column_defs), rows)))
-    for i in visit(visit(visit(table, MD5()), Sequence('id')), EmitJson(sys.stdout)):
+    for i in visit(visit(visit(generate_records(column_defs,generate_rows(len(column_defs), rows)), MD5()),
+                         Sequence('id')), EmitJson(sys.stdout)):
         pass

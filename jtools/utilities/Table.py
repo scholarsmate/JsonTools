@@ -45,18 +45,18 @@ class Table(object):
         result = row.copy()
         try:
             row_to_merge = self.table_[matching_key][0]
-            if exclude_columns:
-                row_to_merge = dict((k, v) for k, v in row_to_merge.items() if k not in exclude_columns)
-            if not updateable:
-                for k in row_to_merge.iterkeys():
-                    if k in row:
-                        raise KeyError('Column "' + k + '" is already in this row')
-
-            result.update(row_to_merge)
         except:
             # no match found
-            if not pass_through:
-                return None
+            return None if not pass_through else result
+
+        if exclude_columns:
+            row_to_merge = dict((k, v) for k, v in row_to_merge.items() if k not in exclude_columns)
+        if not updateable:
+            for k in row_to_merge.iterkeys():
+                if k in row:
+                    raise KeyError('Column "' + k + '" is already in this row')
+
+        result.update(row_to_merge)
         return result
 
     def left_join(self, right_side_table, exclude_columns=None, updateable=False):
@@ -93,13 +93,17 @@ class Table(object):
         # Return a new copy of the joined result
         return Table(result)
 
-    def rows(self):
+    def rows(self, reverse=None):
         """
         Generate rows in this table
 
         :return: an iterator to the rows in this table (like a cursor)
         """
-        for rows in self.table_.itervalues():
-            for row in rows:
-                yield row
-
+        if reverse is None:
+            for rows in self.table_.itervalues():
+                for row in rows:
+                    yield row
+        else:
+            for key in sorted(self.table_, reverse=reverse):
+                for row in self.table_[key]:
+                    yield row
