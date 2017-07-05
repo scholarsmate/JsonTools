@@ -14,7 +14,7 @@ def test():
                           'test/Samples/Sample_2.txt',
                           'test/Samples/Sample_3.txt',
                           'test/Samples/Sample_4.txt'],
-                         exclude_columns=['pkey'], is_primary_key=True).rows(reverse=None):
+                         exclude_columns=['pkey'], is_primary_key=True).rows(reverse=True):
         print json.dumps(row, sort_keys=True)
 
 
